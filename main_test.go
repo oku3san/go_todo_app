@@ -23,7 +23,7 @@ func TestRun(t *testing.T) {
   in := "message"
   url := fmt.Sprintf("http://%s/%s", l.Addr().String(), in)
   t.Logf("try request to %q", url)
-  rsp, err := http.Get("http://localhost:8080/" + in)
+  rsp, err := http.Get(url)
   if err != nil {
     t.Errorf("Failed to get: %+v", err)
   }
