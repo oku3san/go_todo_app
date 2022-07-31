@@ -10,7 +10,7 @@ RUN go build -trimpath -ldflags "-w -s" -o app
 
 #-------------
 
-FROM debial:bullses-slim as deploy
+FROM debian:bullseye-slim as deploy
 
 RUN apt-get update
 
