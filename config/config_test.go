@@ -18,6 +18,6 @@ func TestNew(t *testing.T) {
   }
   wantEnv := "dev"
   if got.Env != wantEnv {
-    t.Errorf("want %d, but %d", wantEnv, got.Env)
+    t.Errorf("want %s, but %s", wantEnv, got.Env)
   }
 }
