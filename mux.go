@@ -12,7 +12,7 @@ func NewMux() http.Handler {
   mux := chi.NewRouter()
   mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
     w.Header().Set("Content-Type", "application/json; charset=utf-8")
-    _, _ = w.Write([]byte(`{"status": "ok"}"`))
+    _, _ = w.Write([]byte(`{"status": "ok"}`))
   })
   v := validator.New()
   at := &handler.AddTask{Store: store.Tasks, Validator: v}
