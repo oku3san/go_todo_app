@@ -2,7 +2,9 @@ package store
 
 import (
   "context"
+  "github.com/DATA-DOG/go-sqlmock"
   "github.com/google/go-cmp/cmp"
+  "github.com/jmoiron/sqlx"
   "github.com/oku3san/go_todo_app/clock"
   "github.com/oku3san/go_todo_app/entity"
   "github.com/oku3san/go_todo_app/testutil"
@@ -42,17 +44,13 @@ func prepareTasks(ctx context.Context, t *testing.T, con Execer) entity.Tasks {
       Created: c.Now(), Modified: c.Now(),
     },
     {
-      Title: "want task 2", Status: "done",
+      Title: "want task 2", Status: "todo",
       Created: c.Now(), Modified: c.Now(),
     },
-  }
-  tasks := entity.Tasks{
-    wants[0],
     {
-      Title: "not want task", Status: "todo",
+      Title: "want task 3", Status: "done",
       Created: c.Now(), Modified: c.Now(),
     },
-    wants[1],
   }
   result, err := con.ExecContext(ctx,
     `INSERT INTO task (title, status, created, modified)
@@ -60,9 +58,9 @@ func prepareTasks(ctx context.Context, t *testing.T, con Execer) entity.Tasks {
 			    (?, ?, ?, ?),
 			    (?, ?, ?, ?),
 			    (?, ?, ?, ?);`,
-    tasks[0].Title, tasks[0].Status, tasks[0].Created, tasks[0].Modified,
-    tasks[1].Title, tasks[1].Status, tasks[1].Created, tasks[1].Modified,
-    tasks[2].Title, tasks[2].Status, tasks[2].Created, tasks[2].Modified,
+    wants[0].Title, wants[0].Status, wants[0].Created, wants[0].Modified,
+    wants[1].Title, wants[1].Status, wants[1].Created, wants[1].Modified,
+    wants[2].Title, wants[2].Status, wants[2].Created, wants[2].Modified,
   )
   if err != nil {
     t.Fatal(err)
@@ -71,8 +69,39 @@ func prepareTasks(ctx context.Context, t *testing.T, con Execer) entity.Tasks {
   if err != nil {
     t.Fatal(err)
   }
-  tasks[0].ID = entity.TaskID(id)
-  tasks[1].ID = entity.TaskID(id + 1)
-  tasks[2].ID = entity.TaskID(id + 2)
+  wants[0].ID = entity.TaskID(id)
+  wants[1].ID = entity.TaskID(id + 1)
+  wants[2].ID = entity.TaskID(id + 2)
   return wants
+}
+
+func TestRepository_AddTask(t *testing.T) {
+  t.Parallel()
+  ctx := context.Background()
+
+  c := clock.FixedClocker{}
+  var wantID int64 = 20
+  okTask := &entity.Task{
+    Title:    "ok task",
+    Status:   "todo",
+    Created:  c.Now(),
+    Modified: c.Now(),
+  }
+
+  db, mock, err := sqlmock.New()
+  if err != nil {
+    t.Fatal(err)
+  }
+  t.Cleanup(func() { _ = db.Close() })
+  mock.ExpectExec(
+    // エスケープが必要
+    `INSERT INTO task \(title, status, created, modified\) VALUES \(\?, \?, \?, \?\)`,
+  ).WithArgs(okTask.Title, okTask.Status, c.Now(), c.Now()).
+    WillReturnResult(sqlmock.NewResult(wantID, 1))
+
+  xdb := sqlx.NewDb(db, "mysql")
+  r := &Repository{Clocker: c}
+  if err := r.AddTask(ctx, xdb, okTask); err != nil {
+    t.Errorf("want no error, but got %v", err)
+  }
 }
