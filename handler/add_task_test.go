@@ -51,9 +51,9 @@ func TestAddTask(t *testing.T) {
 
       moq := &AddTaskServiceMock{}
       moq.AddTaskFunc = func(
-        ctx context.Context, title string
+        ctx context.Context, title string,
       ) (*entity.Task, error) {
-        if tt.want.status == htto.StatusOK {
+        if tt.want.status == http.StatusOK {
           return &entity.Task{ID: 1}, nil
         }
         return nil, errors.New("error from mock")
